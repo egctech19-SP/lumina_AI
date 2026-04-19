@@ -19,8 +19,19 @@ import { supabase } from '../lib/supabase';
 import { Dialog, DialogContent, DialogFooter } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useGoogleLogin } from '@react-oauth/google';
-import { useMsal } from '@azure/msal-react';
 import { loginRequest, MICROSOFT_CLIENT_ID, GOOGLE_SCOPES } from '@/lib/authConfig';
+
+// Safe MSAL hook — only used when MsalProvider is present
+function useSafeMsal() {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { useMsal } = require('@azure/msal-react');
+    return useMsal();
+  } catch {
+    return { instance: null, accounts: [] };
+  }
+}
+
 
 // ─── Types ─────────────────────────────────────────────────────────────────
 interface DriveFolder {
@@ -77,7 +88,7 @@ const FileIcon = ({ mimeType }: { mimeType?: string }) => {
 
 // ─── Main Component ─────────────────────────────────────────────────────────
 export function CloudSourcesView() {
-  const { instance: msalInstance, accounts } = useMsal();
+  const { instance: msalInstance } = useSafeMsal();
 
   const [sources, setSources] = useState<CloudSource[]>([]);
   const [isLoading, setIsLoading] = useState(true);
