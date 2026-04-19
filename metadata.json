@@ -1,0 +1,6 @@
+{
+  "name": "Lumina AI Media Manager",
+  "description": "An AI-powered central hub for organizing, cleaning, and enhancing your local and cloud media using Gemini 1.5 Flash.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
