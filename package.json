@@ -14,6 +14,7 @@
     "@base-ui/react": "^1.4.0",
     "@fontsource-variable/geist": "^5.2.8",
     "@google/generative-ai": "^0.21.0",
+    "@supabase/supabase-js": "^2.103.3",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
     "class-variance-authority": "^0.7.1",
@@ -35,7 +36,7 @@
   "devDependencies": {
     "@types/exif-reader": "^1.0.0",
     "@types/leaflet": "^1.9.21",
-    "@types/node": "^22.14.0",
+    "@types/node": "^22.19.17",
     "@types/react-dropzone": "^4.2.2",
     "autoprefixer": "^10.4.21",
     "tailwindcss": "^4.1.14",

@@ -5,41 +5,69 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { MediaItem } from './types';
-import { MOCK_MEDIA } from './lib/mockData';
+import { supabase } from './lib/supabase';
 
 interface MediaContextType {
   media: MediaItem[];
   filteredMedia: MediaItem[];
   searchQuery: string;
   setSearchQuery: (query: string) => void;
-  addMedia: (item: MediaItem) => void;
-  removeMedia: (id: string) => void;
-  updateMedia: (id: string, updates: Partial<MediaItem>) => void;
+  addMedia: (item: MediaItem) => Promise<void>;
+  removeMedia: (id: string) => Promise<void>;
+  updateMedia: (id: string, updates: Partial<MediaItem>) => Promise<void>;
   isLoading: boolean;
 }
 
 const MediaContext = createContext<MediaContextType | undefined>(undefined);
 
 export function MediaProvider({ children }: { children: React.ReactNode }) {
-  const [media, setMedia] = useState<MediaItem[]>(MOCK_MEDIA);
-  const [isLoading, setIsLoading] = useState(false);
+  const [media, setMedia] = useState<MediaItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Persistence to localStorage for "Local App" feel
+  // Fetch from Supabase on mount
   useEffect(() => {
-    const saved = localStorage.getItem('lumina_media');
-    if (saved) {
+    async function fetchMedia() {
+      setIsLoading(true);
       try {
-        setMedia(JSON.parse(saved));
+        const { data, error } = await supabase
+          .from('media_items')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        // Map snake_case to camelCase
+        const mappedMedia: MediaItem[] = (data || []).map(item => ({
+          id: item.id,
+          name: item.name,
+          url: item.url,
+          type: item.type,
+          mimeType: item.mime_type,
+          size: item.size,
+          width: item.width,
+          height: item.height,
+          createdAt: new Date(item.created_at).getTime(),
+          location: item.location,
+          tags: item.tags,
+          aiQualityScore: item.ai_quality_score,
+          isBlurry: item.is_blurry,
+          faces: item.faces,
+          perceptualHash: item.perceptual_hash,
+          rating: item.rating,
+          source: item.source
+        }));
+
+        setMedia(mappedMedia);
       } catch (e) {
-        console.error("Failed to load saved media", e);
+        console.error("Failed to fetch media from Supabase", e);
+      } finally {
+        setIsLoading(false);
       }
     }
-  }, []);
 
-  useEffect(() => {
-    localStorage.setItem('lumina_media', JSON.stringify(media));
-  }, [media]);
+    fetchMedia();
+  }, []);
 
   const filteredMedia = media.filter(item => {
     if (!searchQuery) return true;
@@ -63,16 +91,81 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     return false;
   });
 
-  const addMedia = (item: MediaItem) => {
-    setMedia(prev => [item, ...prev]);
+  const addMedia = async (item: MediaItem) => {
+    try {
+      // Map camelCase to snake_case for Supabase
+      const { data, error } = await supabase
+        .from('media_items')
+        .insert([{
+          name: item.name,
+          url: item.url,
+          type: item.type,
+          mime_type: item.mimeType,
+          size: item.size,
+          width: item.width,
+          height: item.height,
+          created_at: new Date(item.createdAt).toISOString(),
+          location: item.location,
+          tags: item.tags,
+          ai_quality_score: item.aiQualityScore,
+          is_blurry: item.isBlurry,
+          faces: item.faces,
+          perceptual_hash: item.perceptualHash,
+          rating: item.rating,
+          source: item.source
+        }])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      // Add with generated ID
+      const newItem: MediaItem = { ...item, id: data.id };
+      setMedia(prev => [newItem, ...prev]);
+    } catch (e) {
+      console.error("Failed to add media to Supabase", e);
+    }
   };
 
-  const removeMedia = (id: string) => {
-    setMedia(prev => prev.filter(m => m.id !== id));
+  const removeMedia = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('media_items')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+      setMedia(prev => prev.filter(m => m.id !== id));
+    } catch (e) {
+      console.error("Failed to remove media from Supabase", e);
+    }
   };
 
-  const updateMedia = (id: string, updates: Partial<MediaItem>) => {
-    setMedia(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
+  const updateMedia = async (id: string, updates: Partial<MediaItem>) => {
+    try {
+      // Map camelCase to snake_case for specific fields
+      const dbUpdates: any = { ...updates };
+      if (updates.mimeType) dbUpdates.mime_type = updates.mimeType;
+      if (updates.createdAt) dbUpdates.created_at = new Date(updates.createdAt).toISOString();
+      if (updates.aiQualityScore !== undefined) dbUpdates.ai_quality_score = updates.aiQualityScore;
+      if (updates.perceptualHash) dbUpdates.perceptual_hash = updates.perceptualHash;
+      
+      // Remove original camelCase fields
+      delete dbUpdates.mimeType;
+      delete dbUpdates.createdAt;
+      delete dbUpdates.aiQualityScore;
+      delete dbUpdates.perceptualHash;
+
+      const { error } = await supabase
+        .from('media_items')
+        .update(dbUpdates)
+        .eq('id', id);
+
+      if (error) throw error;
+      setMedia(prev => prev.map(m => m.id === id ? { ...m, ...updates } : m));
+    } catch (e) {
+      console.error("Failed to update media in Supabase", e);
+    }
   };
 
   return (
