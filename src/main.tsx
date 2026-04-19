@@ -2,17 +2,22 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
-import { GoogleOAuthProvider } from '@react-oauth/google';
 import { GOOGLE_CLIENT_ID, MICROSOFT_CLIENT_ID, msalConfig } from './lib/authConfig';
 
-// Only initialize MSAL if a Client ID is configured to avoid crashes
 async function bootstrap() {
-  let AppTree = (
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <App />
-    </GoogleOAuthProvider>
-  );
+  let AppTree = <App />;
 
+  // Wrap with Google OAuth if client ID is available
+  if (GOOGLE_CLIENT_ID) {
+    const { GoogleOAuthProvider } = await import('@react-oauth/google');
+    AppTree = (
+      <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+        {AppTree}
+      </GoogleOAuthProvider>
+    );
+  }
+
+  // Wrap with MSAL if Microsoft client ID is available
   if (MICROSOFT_CLIENT_ID) {
     const { PublicClientApplication } = await import('@azure/msal-browser');
     const { MsalProvider } = await import('@azure/msal-react');
@@ -20,9 +25,7 @@ async function bootstrap() {
     await msalInstance.initialize();
     AppTree = (
       <MsalProvider instance={msalInstance}>
-        <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-          <App />
-        </GoogleOAuthProvider>
+        {AppTree}
       </MsalProvider>
     );
   }
@@ -32,4 +35,10 @@ async function bootstrap() {
   );
 }
 
-bootstrap();
+bootstrap().catch(err => {
+  console.error('Bootstrap error:', err);
+  // Fallback: render app without any OAuth providers
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode><App /></StrictMode>
+  );
+});
