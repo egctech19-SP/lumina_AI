@@ -237,11 +237,12 @@ export function CloudSourcesView() {
     }
   };
 
-  // ── Finish Connection → Save to Supabase ────────────────────────────────
+  // ── Finish Connection → Save source to Supabase + token to session ──────
   const handleFinishConnection = async () => {
-    if (!activeProvider || !driveUser) return;
+    if (!activeProvider || !driveUser || !driveToken) return;
     setConnecting(activeProvider.id);
     try {
+      // Save the cloud source connection record
       const { data, error } = await supabase
         .from('cloud_sources')
         .insert([{
@@ -250,12 +251,17 @@ export function CloudSourcesView() {
           email: driveUser.email,
           status: 'connected',
           usage_used: 0,
-          usage_total: 100 * 1024 * 1024 * 1024,
+          usage_total: 15 * 1024 * 1024 * 1024,
         }])
         .select()
         .single();
 
       if (error) throw error;
+
+      // Save token + selected folders to sessionStorage for live access during this session
+      // Images stay in Google Drive — we only store the reference
+      sessionStorage.setItem('gdrive_token', driveToken);
+      sessionStorage.setItem('gdrive_folders', JSON.stringify(selectedFolders));
 
       setSources(prev => [{
         id: data.id,
@@ -264,8 +270,9 @@ export function CloudSourcesView() {
         email: data.email,
         status: 'connected',
         lastSync: Date.now(),
-        usage: { used: 0, total: 100 * 1024 * 1024 * 1024 }
+        usage: { used: 0, total: 15 * 1024 * 1024 * 1024 }
       }, ...prev]);
+
       setShowFolderStep(false);
       setActiveProvider(null);
       setDriveToken(null);
@@ -276,6 +283,7 @@ export function CloudSourcesView() {
       setConnecting(null);
     }
   };
+
 
   // ── Sync ─────────────────────────────────────────────────────────────────
   const handleSync = async (id: string) => {

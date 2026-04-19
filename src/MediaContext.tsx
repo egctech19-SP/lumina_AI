@@ -15,6 +15,7 @@ interface MediaContextType {
   addMedia: (item: MediaItem) => Promise<void>;
   removeMedia: (id: string) => Promise<void>;
   updateMedia: (id: string, updates: Partial<MediaItem>) => Promise<void>;
+  refreshMedia: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -168,6 +169,41 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const refreshMedia = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('media_items')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      const mappedMedia: MediaItem[] = (data || []).map(item => ({
+        id: item.id,
+        name: item.name,
+        url: item.url,
+        type: item.type,
+        mimeType: item.mime_type,
+        size: item.size,
+        width: item.width,
+        height: item.height,
+        createdAt: new Date(item.created_at).getTime(),
+        location: item.location,
+        tags: item.tags,
+        aiQualityScore: item.ai_quality_score,
+        isBlurry: item.is_blurry,
+        faces: item.faces,
+        perceptualHash: item.perceptual_hash,
+        rating: item.rating,
+        source: item.source
+      }));
+      setMedia(mappedMedia);
+    } catch (e) {
+      console.error('Failed to refresh media', e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <MediaContext.Provider value={{ 
       media, 
@@ -177,6 +213,7 @@ export function MediaProvider({ children }: { children: React.ReactNode }) {
       addMedia, 
       removeMedia, 
       updateMedia, 
+      refreshMedia,
       isLoading 
     }}>
       {children}
