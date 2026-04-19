@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { DashboardLayout } from './components/DashboardLayout';
 import { GalleryView } from './components/GalleryView';
+import { TimelineView } from './components/TimelineView';
 import { MapView } from './components/MapView';
 import { CleanupView } from './components/CleanupView';
 import { AIEditorView } from './components/AIEditorView';
@@ -27,6 +28,8 @@ function AppContent() {
     switch (activeView) {
       case 'gallery':
         return <GalleryView media={media} />;
+      case 'timeline':
+        return <TimelineView media={media} />;
       case 'map':
         return <MapView media={media} />;
       case 'cleanup':

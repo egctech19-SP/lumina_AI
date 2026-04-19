@@ -16,7 +16,8 @@ import {
   Search,
   Zap,
   Clock,
-  Heart
+  Heart,
+  CalendarDays
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -36,6 +37,7 @@ export function DashboardLayout({ children, activeView, onViewChange, onAddClick
   const { searchQuery, setSearchQuery } = useMedia();
   const navItems = [
     { id: 'gallery', label: 'Toda a Mídia', icon: LayoutGrid },
+    { id: 'timeline', label: 'Linha do Tempo', icon: CalendarDays },
     { id: 'map', label: 'Explorador de Mapas', icon: MapIcon },
     { id: 'people', label: 'Grupos de Rostos', icon: Users },
     { id: 'cloud', label: 'Fontes de Nuvem', icon: Cloud },

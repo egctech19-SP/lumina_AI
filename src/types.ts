@@ -31,7 +31,7 @@ export interface MediaItem {
   source: 'local' | 'onedrive' | 'gdrive';
 }
 
-export type ViewType = 'gallery' | 'map' | 'people' | 'cleanup' | 'editor' | 'cloud';
+export type ViewType = 'gallery' | 'timeline' | 'map' | 'people' | 'cleanup' | 'editor' | 'cloud';
 
 export interface CloudSource {
   id: string;
