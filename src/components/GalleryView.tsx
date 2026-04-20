@@ -14,6 +14,7 @@ import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { MediaDetailDialog } from './MediaDetailDialog';
 import { useDriveMedia, DriveFile } from '../hooks/useDriveMedia';
+import { PhotoInfoButton, usePhotoInfo, type PhotoInfoItem } from './PhotoInfoPanel';
 
 interface GalleryViewProps {
   media: MediaItem[];
@@ -21,8 +22,8 @@ interface GalleryViewProps {
 
 export function GalleryView({ media }: GalleryViewProps) {
   const [selectedMedia, setSelectedMedia] = React.useState<MediaItem | null>(null);
-  const { driveFiles, isLoadingDrive, driveError, isConnected, getDriveImageUrl, reloadDrive } = useDriveMedia();
   const [selectedDriveFile, setSelectedDriveFile] = React.useState<DriveFile | null>(null);
+  const { driveFiles, isLoadingDrive, driveError, isConnected, getDriveImageUrl, reloadDrive } = useDriveMedia();
 
   // Group Supabase media by date
   const groupedMedia = media.reduce((acc, item) => {
@@ -76,35 +77,51 @@ export function GalleryView({ media }: GalleryViewProps) {
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-              {driveFiles.map((file, idx) => (
-                <motion.div
-                  key={file.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.02 }}
-                  onClick={() => setSelectedDriveFile(file)}
-                >
-                  <div className="group relative aspect-square rounded-xl overflow-hidden bg-slate-100 shadow-sm hover:shadow-2xl hover:shadow-emerald-500/20 hover:ring-4 hover:ring-emerald-500/40 transition-all duration-300 cursor-pointer">
-                    <img
-                      src={getDriveImageUrl(file)}
-                      alt={file.name}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                      referrerPolicy="no-referrer"
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent p-3 flex flex-col justify-end">
-                      <p className="text-[10px] text-white/90 font-bold uppercase tracking-widest truncate">
-                        {file.name.replace(/\.[^.]+$/, '')}
-                      </p>
+              {driveFiles.map((file, idx) => {
+                const infoItem: PhotoInfoItem = {
+                  id: `gdrive-${file.id}`,
+                  name: file.name,
+                  url: getDriveImageUrl(file),
+                  createdAt: file.createdTime ? new Date(file.createdTime).getTime() : Date.now(),
+                  size: file.size ? parseInt(file.size) : undefined,
+                  source: 'gdrive',
+                  mimeType: file.mimeType,
+                  driveFile: file,
+                };
+                return (
+                  <motion.div
+                    key={file.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.02 }}
+                    onClick={() => setSelectedDriveFile(file)}
+                  >
+                    <div className="group relative aspect-square rounded-xl overflow-hidden bg-slate-100 shadow-sm hover:shadow-2xl hover:shadow-emerald-500/20 hover:ring-4 hover:ring-emerald-500/40 transition-all duration-300 cursor-pointer">
+                      <img
+                        src={getDriveImageUrl(file)}
+                        alt={file.name}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        referrerPolicy="no-referrer"
+                        loading="lazy"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent p-3 flex flex-col justify-end">
+                        <p className="text-[10px] text-white/90 font-bold uppercase tracking-widest truncate">
+                          {file.name.replace(/\.[^.]+$/, '')}
+                        </p>
+                      </div>
+                      <div className="absolute top-2 left-2">
+                        <Badge className="bg-emerald-600/80 backdrop-blur-md border-none text-[8px] text-white h-5 px-2 font-bold">
+                          DRIVE
+                        </Badge>
+                      </div>
+                      {/* Info button */}
+                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <PhotoInfoButton item={infoItem} className="w-7 h-7" />
+                      </div>
                     </div>
-                    <div className="absolute top-2 left-2">
-                      <Badge className="bg-emerald-600/80 backdrop-blur-md border-none text-[8px] text-white h-5 px-2 font-bold">
-                        DRIVE
-                      </Badge>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                );
+              })}
             </div>
           )}
         </section>
@@ -164,58 +181,76 @@ export function GalleryView({ media }: GalleryViewProps) {
                 </h3>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-                {items.map((item, idx) => (
-                  <motion.div
-                    key={item.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.03 }}
-                    onClick={() => setSelectedMedia(item)}
-                  >
-                    <div className="group relative aspect-square rounded-xl overflow-hidden bg-slate-200 shadow-sm hover:shadow-2xl hover:shadow-indigo-500/20 hover:ring-4 hover:ring-indigo-500/50 transition-all duration-300 cursor-pointer">
-                      <img
-                        src={item.url}
-                        alt={item.name}
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                        referrerPolicy="no-referrer"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-4 flex flex-col justify-end">
-                        <p className="text-[10px] text-white/90 font-bold uppercase tracking-widest truncate mb-1">
-                          {item.name}
-                        </p>
-                        <div className="flex items-center gap-2">
-                          <div className="h-1 w-8 bg-indigo-500 rounded-full" />
-                          {item.location && (
-                            <span className="text-[9px] text-white/60 truncate flex items-center gap-1 font-medium">
-                              <MapPin className="w-2.5 h-2.5 text-indigo-400" />
-                              {item.location.address?.split(',')[0]}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
-                        <Button variant="secondary" size="icon" className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-md border-white/20 text-white hover:bg-indigo-500 hover:text-white hover:border-transparent">
-                          <Heart className={cn("w-4 h-4", (item.rating || 0) >= 4 && "fill-rose-500 text-rose-500")} />
-                        </Button>
-                      </div>
-                      {item.type === 'video' && (
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                          <div className="w-12 h-12 rounded-full bg-indigo-500/60 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-lg group-hover:scale-125 transition-transform">
-                            <Play className="w-5 h-5 text-white fill-current ml-0.5" />
+                {items.map((item, idx) => {
+                  const infoItem: PhotoInfoItem = {
+                    id: item.id,
+                    name: item.name,
+                    url: item.url,
+                    createdAt: item.createdAt,
+                    size: item.size,
+                    source: item.source,
+                    mimeType: item.mimeType,
+                    location: item.location,
+                    tags: item.tags,
+                    rating: item.rating,
+                    aiQualityScore: item.aiQualityScore,
+                    isBlurry: item.isBlurry,
+                    width: item.width,
+                    height: item.height,
+                    mediaItem: item,
+                  };
+                  return (
+                    <motion.div
+                      key={item.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: idx * 0.03 }}
+                      onClick={() => setSelectedMedia(item)}
+                    >
+                      <div className="group relative aspect-square rounded-xl overflow-hidden bg-slate-200 shadow-sm hover:shadow-2xl hover:shadow-indigo-500/20 hover:ring-4 hover:ring-indigo-500/50 transition-all duration-300 cursor-pointer">
+                        <img
+                          src={item.url}
+                          alt={item.name}
+                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                          referrerPolicy="no-referrer"
+                          loading="lazy"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-4 flex flex-col justify-end">
+                          <p className="text-[10px] text-white/90 font-bold uppercase tracking-widest truncate mb-1">
+                            {item.name}
+                          </p>
+                          <div className="flex items-center gap-2">
+                            <div className="h-1 w-8 bg-indigo-500 rounded-full" />
+                            {item.location && (
+                              <span className="text-[9px] text-white/60 truncate flex items-center gap-1 font-medium">
+                                <MapPin className="w-2.5 h-2.5 text-indigo-400" />
+                                {item.location.address?.split(',')[0]}
+                              </span>
+                            )}
                           </div>
                         </div>
-                      )}
-                      {item.source !== 'local' && (
-                        <div className="absolute top-3 left-3">
-                          <Badge variant="secondary" className="bg-indigo-600/80 backdrop-blur-md border-none text-[8px] text-white h-5 px-2 font-bold tracking-tighter">
-                            {item.source.toUpperCase()}
-                          </Badge>
+                        {/* Info button — top right */}
+                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <PhotoInfoButton item={infoItem} className="w-7 h-7" />
                         </div>
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
+                        {item.type === 'video' && (
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div className="w-12 h-12 rounded-full bg-indigo-500/60 backdrop-blur-md flex items-center justify-center border border-white/30 shadow-lg group-hover:scale-125 transition-transform">
+                              <Play className="w-5 h-5 text-white fill-current ml-0.5" />
+                            </div>
+                          </div>
+                        )}
+                        {item.source !== 'local' && (
+                          <div className="absolute top-2 left-2">
+                            <Badge variant="secondary" className="bg-indigo-600/80 backdrop-blur-md border-none text-[8px] text-white h-5 px-2 font-bold tracking-tighter">
+                              {item.source.toUpperCase()}
+                            </Badge>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
             </section>
           ))}

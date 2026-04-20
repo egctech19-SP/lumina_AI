@@ -17,6 +17,7 @@ import { ViewType, CleanupGroup, MediaItem } from './types';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { MediaProvider, useMedia } from './MediaContext';
 import { PeopleView } from './components/PeopleView';
+import { PhotoInfoProvider } from './components/PhotoInfoPanel';
 
 function AppContent() {
   const [activeView, setActiveView] = useState<ViewType>('gallery');
@@ -59,10 +60,13 @@ export default function App() {
   return (
     <TooltipProvider>
       <MediaProvider>
-        <AppContent />
+        <PhotoInfoProvider>
+          <AppContent />
+        </PhotoInfoProvider>
       </MediaProvider>
     </TooltipProvider>
   );
 }
+
 
 
